@@ -27,7 +27,7 @@ Initial FastAPI, Postgres, Grafana, Docker Compose, Congress.gov gateway, schedu
 - Filtered text-version observations against the active collection window.
 - Persisted `next_run_at` during FastAPI startup before the first scheduled poll.
 - Moved the Congress API key into a Docker secret sourced from the shell `CONGRESS_API_KEY`.
-- Bound Postgres and FastAPI host ports to `127.0.0.1`; Grafana remains LAN-accessible on port `3000`.
+- Kept Postgres private to the Docker network and bound FastAPI host access to `127.0.0.1`; Grafana remains LAN-accessible on port `3000`.
 - Replaced the GitHub dependency with the pinned published package.
 
 ### Deferred Findings
@@ -45,3 +45,6 @@ None.
 - `python3 -m compileall src tests scripts`
 - `python3 scripts/validate_harness.py`
 - `env CONGRESS_API_KEY=redacted-for-compose-validation docker compose --env-file .env.example config`
+- `docker compose up --build -d`
+- `docker compose exec tracker python -m bill_update_tracker.collector run-once`
+- Live validation inserted 1,012 events for 2026-08-10 after switching default polling to the current Congress endpoint.

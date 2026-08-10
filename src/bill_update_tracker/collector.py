@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from .config import get_settings
 from .congress_gateway import CongressGateway
@@ -32,16 +32,23 @@ def run_once(next_run_at: datetime | None = None) -> int:
     settings = get_settings()
     init_db(settings.database_url)
     since = collection_window_start(settings.tracker_timezone, settings.initial_lookback_days)
+    resolved_next_run_at = next_run_at or (
+        datetime.now(timezone.utc) + timedelta(seconds=settings.poll_interval_seconds)
+    )
 
     with connect(settings.database_url) as connection:
-        run_id = start_poll_run(connection, next_run_at)
+        run_id = start_poll_run(connection, resolved_next_run_at)
         connection.commit()
         try:
-            gateway = CongressGateway(settings.resolved_congress_api_key() or "")
+            gateway = CongressGateway(
+                settings.resolved_congress_api_key() or "",
+                target_congress=settings.resolved_target_congress(),
+                track_current_congress_only=settings.track_current_congress_only,
+            )
             events = collect_events(gateway, since)
             inserted = insert_events(connection, events)
             refresh_rollups(connection)
-            finish_poll_run(connection, run_id, "success", inserted, next_run_at)
+            finish_poll_run(connection, run_id, "success", inserted, resolved_next_run_at)
             connection.commit()
             return inserted
         except Exception as exc:
@@ -52,7 +59,7 @@ def run_once(next_run_at: datetime | None = None) -> int:
                     run_id,
                     "failed",
                     0,
-                    next_run_at,
+                    resolved_next_run_at,
                     error=str(exc),
                 )
                 failure_connection.commit()

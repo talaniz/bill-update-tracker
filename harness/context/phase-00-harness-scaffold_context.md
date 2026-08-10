@@ -12,6 +12,7 @@
 - Use `talaniz/congress.py` for Congress.gov access.
 - Do not leak `CONGRESS_API_KEY`; the user's local source is `~/.zshrc.secrets`.
 - Initial tracking starts from the current day only.
+- The tracker defaults to the current Congress reported by Congress.gov because all-congress bill pagination returned API 500 errors during live validation on 2026-08-10.
 
 ## Decisions
 
@@ -23,4 +24,3 @@
 
 - Exact LLM-call strategy will be determined after observing update volume and update-type distribution.
 - Summary caching design is deferred until the tracker has real volume data.
-

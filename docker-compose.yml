@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: bill_update_tracker
       POSTGRES_USER: tracker
       POSTGRES_PASSWORD: tracker
-    ports:
-      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./sql/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
@@ -26,6 +24,8 @@ services:
       TRACKER_TIMEZONE: ${TRACKER_TIMEZONE:-America/Los_Angeles}
       POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-3600}
       INITIAL_LOOKBACK_DAYS: ${INITIAL_LOOKBACK_DAYS:-0}
+      TRACK_CURRENT_CONGRESS_ONLY: ${TRACK_CURRENT_CONGRESS_ONLY:-true}
+      TARGET_CONGRESS: ${TARGET_CONGRESS:-}
       ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-true}
     ports:
       - "127.0.0.1:8000:8000"

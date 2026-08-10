@@ -12,6 +12,8 @@ Track Congress.gov bill update volume over time so downstream projects can estim
 
 Initial tracking starts from the current day. The default scheduler polls hourly and stores both raw events and daily rollups in Postgres.
 
+By default, the tracker follows the current Congress reported by Congress.gov. This avoids unstable deep pagination across all historical bills while still answering the operational question for active legislative tracking.
+
 ## Secret Handling
 
 Do not commit real secrets. Compose reads `CONGRESS_API_KEY` from your shell and mounts it into the tracker container as a Docker secret file. On this machine, the intended local source is `~/.zshrc.secrets`; source it before running commands that need live Congress.gov access.
@@ -34,6 +36,8 @@ FastAPI health: `http://localhost:8000/health`
 
 FastAPI status: `http://localhost:8000/status`
 
+The dashboard is provisioned at `http://localhost:3000/d/bill-update-tracker/bill-update-tracker`.
+
 ## Raspberry Pi Deployment
 
 Install Docker and Docker Compose on the Pi, clone this repo, create `.env`, and run:
@@ -48,7 +52,7 @@ From your laptop on the same network, open:
 http://<pi-hostname-or-ip>:3000
 ```
 
-Use a non-default `GRAFANA_ADMIN_PASSWORD` in `.env` before exposing the dashboard on your LAN. Postgres and FastAPI are bound to localhost by default; Grafana is the only service published for LAN access.
+Use a non-default `GRAFANA_ADMIN_PASSWORD` in `.env` before exposing the dashboard on your LAN. Postgres is private to the Docker network and FastAPI is bound to localhost by default; Grafana is the only service published for LAN access.
 
 ## Manual Poll
 
@@ -56,7 +60,7 @@ With dependencies installed:
 
 ```bash
 source ~/.zshrc.secrets
-DATABASE_URL=postgresql://tracker:tracker@localhost:5432/bill_update_tracker python3 -m bill_update_tracker.collector run-once
+docker compose exec tracker python -m bill_update_tracker.collector run-once
 ```
 
 ## Verification

@@ -9,12 +9,20 @@ from .normalize import parse_congress_datetime
 class CongressGateway:
     """Fetches Congress.gov updates while keeping congress.py as the configured client library."""
 
-    def __init__(self, api_key: str, api_root: str = "https://api.congress.gov/v3") -> None:
+    def __init__(
+        self,
+        api_key: str,
+        api_root: str = "https://api.congress.gov/v3",
+        target_congress: int | None = None,
+        track_current_congress_only: bool = True,
+    ) -> None:
         if not api_key:
             raise ValueError("CONGRESS_API_KEY is required for live Congress.gov polling")
         self.api_key = api_key
         self.api_root = api_root.rstrip("/")
         self.client = self._build_congress_py_client(api_key)
+        self.target_congress = target_congress
+        self.track_current_congress_only = track_current_congress_only
 
     @staticmethod
     def _build_congress_py_client(api_key: str) -> Any:
@@ -25,14 +33,32 @@ class CongressGateway:
         return CongressClient(api_key)
 
     def fetch_updates_since(self, since: datetime) -> dict[str, list[dict[str, Any]]]:
-        since_value = since.date().isoformat()
+        since_value = since.isoformat().replace("+00:00", "Z")
+        bill_path = self._path("bill")
+        summaries_path = self._path("summaries")
         return {
-            "bill_actions": self._paged_get("bill", {"fromDateTime": since_value, "sort": "updateDate+desc"}),
+            "bill_actions": self._paged_get(
+                bill_path, {"fromDateTime": since_value, "sort": "updateDate desc"}
+            ),
             "summaries": self._paged_get(
-                "summaries", {"fromDateTime": since_value, "sort": "updateDate+desc"}
+                summaries_path, {"fromDateTime": since_value, "sort": "updateDate desc"}
             ),
             "text_versions": self._bill_text_versions_since(since),
         }
+
+    def _path(self, collection: str) -> str:
+        congress = self._target_congress()
+        if congress is None:
+            return collection
+        return f"{collection}/{congress}"
+
+    def _target_congress(self) -> int | None:
+        if self.target_congress:
+            return self.target_congress
+        if not self.track_current_congress_only:
+            return None
+        payload = self._get("congress/current", {})
+        return int(payload["congress"]["number"])
 
     def _paged_get(self, path: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
@@ -50,7 +76,8 @@ class CongressGateway:
         return items
 
     def _bill_text_versions_since(self, since: datetime) -> list[dict[str, Any]]:
-        bills = self._paged_get("bill", {"fromDateTime": since.date().isoformat(), "sort": "updateDate+desc"})
+        since_value = since.isoformat().replace("+00:00", "Z")
+        bills = self._paged_get(self._path("bill"), {"fromDateTime": since_value, "sort": "updateDate desc"})
         text_versions: list[dict[str, Any]] = []
         for bill in bills:
             congress = bill.get("congress")
@@ -80,7 +107,18 @@ class CongressGateway:
         return parse_congress_datetime(update_value).date() >= since.date()
 
     def _get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
-        return self.client._get(
+        import requests
+
+        response = self.client.session.get(
             f"{self.api_root}/{path.lstrip('/')}",
-            params={**params, "format": "json"},
+            params={**params, "api_key": self.api_key, "format": "json"},
+            timeout=30,
         )
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            body = response.text[:500].replace(self.api_key, "[redacted]")
+            raise RuntimeError(
+                f"Congress.gov request failed with status {response.status_code}: {body}"
+            ) from None
+        return response.json()

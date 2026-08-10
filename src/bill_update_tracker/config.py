@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     tracker_timezone: str = "America/Los_Angeles"
     poll_interval_seconds: int = 3600
     initial_lookback_days: int = 0
+    track_current_congress_only: bool = True
+    target_congress: str | None = None
     enable_scheduler: bool = True
 
     def resolved_congress_api_key(self) -> str | None:
@@ -21,6 +23,11 @@ class Settings(BaseSettings):
             if secret_path.exists():
                 return secret_path.read_text().strip()
         return self.congress_api_key
+
+    def resolved_target_congress(self) -> int | None:
+        if self.target_congress:
+            return int(self.target_congress)
+        return None
 
 
 @lru_cache

@@ -28,7 +28,7 @@ def bill_identity(item: dict[str, Any]) -> tuple[int | None, str | None, str | N
 
 def normalize_bill_action(item: dict[str, Any]) -> UpdateEvent | None:
     latest_action = item.get("latestAction") or {}
-    update_value = latest_action.get("actionDate") or item.get("updateDate")
+    update_value = item.get("updateDate") or latest_action.get("actionDate")
     if not update_value:
         return None
     congress, bill_type, number = bill_identity(item)
@@ -82,4 +82,3 @@ def normalize_summary(item: dict[str, Any]) -> UpdateEvent | None:
         update_date=update_date,
         payload=item,
     )
-
