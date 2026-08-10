@@ -69,6 +69,7 @@ services:
     depends_on:
       - node-exporter
       - cadvisor
+      - ntfy
 
   node-exporter:
     image: prom/node-exporter:v1.12.1
@@ -93,6 +94,34 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk:/dev/disk:ro
+
+  ntfy:
+    image: binwiederhier/ntfy:v2.26.3
+    restart: unless-stopped
+    init: true
+    command:
+      - serve
+    environment:
+      TZ: ${TRACKER_TIMEZONE:-America/Los_Angeles}
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://localhost:8093}
+      NTFY_CACHE_FILE: /var/lib/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/auth.db
+      NTFY_AUTH_DEFAULT_ACCESS: ${NTFY_AUTH_DEFAULT_ACCESS:-deny-all}
+      NTFY_AUTH_USERS: ${NTFY_AUTH_USERS:-}
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_ATTACHMENT_CACHE_DIR: /var/lib/ntfy/attachments
+      NTFY_ENABLE_LOGIN: ${NTFY_ENABLE_LOGIN:-true}
+      NTFY_METRICS_LISTEN_HTTP: ":9090"
+    ports:
+      - "${NTFY_HOST_BIND:-127.0.0.1}:${NTFY_HOST_PORT:-8093}:80"
+    volumes:
+      - ./runtime/ntfy:/var/lib/ntfy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres-data:

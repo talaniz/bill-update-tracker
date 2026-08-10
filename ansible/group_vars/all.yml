@@ -20,6 +20,15 @@ grafana_root_url: "http://{{ app_public_host }}{{ app_public_path }}"
 grafana_serve_from_sub_path: "true"
 prometheus_retention: 30d
 
+ntfy_enabled: true
+ntfy_host_bind: 127.0.0.1
+ntfy_host_port: 8093
+ntfy_public_path: /ntfy/
+ntfy_base_url: "http://{{ app_public_host }}{{ ntfy_public_path }}"
+ntfy_data_dir: "{{ app_install_dir }}/runtime/ntfy"
+ntfy_auth_default_access: deny-all
+ntfy_enable_login: "true"
+
 nginx_site_path: /etc/nginx/conf.d/bill-update-tracker.conf
 nginx_test_command: /usr/sbin/nginx -t
 nginx_reload_command: systemctl reload nginx
