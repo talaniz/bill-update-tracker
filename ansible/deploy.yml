@@ -70,6 +70,9 @@
       ansible.builtin.command: "{{ nginx_test_command }}"
       changed_when: false
 
+    - name: Apply nginx config before smoke checks
+      ansible.builtin.meta: flush_handlers
+
     - name: Start tracker stack
       ansible.builtin.command: docker compose --env-file .env up -d --build
       args:
