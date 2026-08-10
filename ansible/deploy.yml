@@ -162,7 +162,7 @@
         msg:
           - "Deployed {{ app_repo_url }} {{ app_repo_version }} to {{ app_install_dir }}"
           - "Grafana route: http://{{ app_public_host }}{{ app_public_path }}"
-          - "ntfy route: http://{{ app_public_host }}{{ ntfy_public_path }}"
+          - "ntfy route: {{ ntfy_base_url }}/"
           - "{{ compose_ps.stdout_lines }}"
 
   handlers:

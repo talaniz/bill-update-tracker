@@ -66,11 +66,13 @@ The default deployment path is `/opt/bill-update-tracker`, and Grafana is served
 http://deathstar.local/bill-update-tracker/
 ```
 
-ntfy is served through the same Nginx host at:
+ntfy is served on the LAN at:
 
 ```text
-http://deathstar.local/ntfy/
+http://deathstar.local:8093/
 ```
+
+The nginx `/ntfy/` route redirects to the ntfy port because ntfy does not support being hosted under a URL subpath.
 
 See `ansible/README.md` for the checked deployment workflow.
 
@@ -112,7 +114,7 @@ From the deployed Pi route, use:
 ```bash
 curl -u '<username>:<password>' \
   -d 'bill-update-tracker ntfy smoke test' \
-  http://deathstar.local/ntfy/bill-update-tracker-test
+  http://deathstar.local:8093/bill-update-tracker-test
 ```
 
 ## Verification
@@ -131,4 +133,4 @@ The Congress.gov API reports bill, text, and summary updates with different date
 
 Host and container metrics are collected by Prometheus from `node-exporter` and cAdvisor. Prometheus, node_exporter, and cAdvisor are private to the Docker network by default; Grafana is the UI entrypoint.
 
-ntfy is configured as a private LAN service by default. It binds to localhost on the Docker host and is reachable through Nginx at `/ntfy/`; no router port forwarding or public internet exposure is required.
+ntfy is configured as a private LAN service by default. Local laptop runs bind ntfy to localhost; the Pi deployment binds ntfy to the LAN on port `8093`. No router port forwarding or public internet exposure is required.

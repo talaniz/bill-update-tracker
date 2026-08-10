@@ -7,8 +7,8 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 ## Desired Outcome
 
 - ntfy runs on the Pi through Docker Compose.
-- ntfy is reachable on the LAN through nginx at `http://deathstar.local/ntfy/`.
-- ntfy is not directly exposed on a public interface; the container port binds to `127.0.0.1`.
+- ntfy is reachable on the LAN at `http://deathstar.local:8093/`.
+- ntfy is not exposed to the public internet; the Pi deployment binds the container port to the LAN only.
 - ntfy data persists across container restarts and deploys.
 - publishing requires authentication by default.
 - deployment remains repeatable through Ansible.
@@ -36,9 +36,10 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 1. Add ntfy configuration to Docker Compose.
    - Add a `ntfy` service using `binwiederhier/ntfy`.
    - Run `ntfy serve`.
-   - Bind `127.0.0.1:8093:80`.
+   - Bind `127.0.0.1:8093:80` locally.
+   - Bind `0.0.0.0:8093:80` on the Pi for LAN access.
    - Mount persistent data at `/var/lib/ntfy`.
-   - Set `NTFY_BASE_URL=http://deathstar.local/ntfy`.
+   - Set `NTFY_BASE_URL=http://deathstar.local:8093`.
    - Set `NTFY_BEHIND_PROXY=true`.
    - Set `NTFY_CACHE_FILE=/var/lib/ntfy/cache.db`.
    - Set `NTFY_AUTH_FILE=/var/lib/ntfy/auth.db`.
@@ -48,10 +49,10 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 
 2. Add Ansible variables for ntfy.
    - `ntfy_enabled: true`
-   - `ntfy_host_bind: 127.0.0.1`
+   - `ntfy_host_bind: 0.0.0.0`
    - `ntfy_host_port: 8093`
    - `ntfy_public_path: /ntfy/`
-   - `ntfy_base_url: http://deathstar.local/ntfy`
+   - `ntfy_base_url: http://deathstar.local:8093`
    - `ntfy_data_dir: "{{ app_install_dir }}/runtime/ntfy"`
 
 3. Add secret handling for ntfy auth.
@@ -65,11 +66,9 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
    - Restrict permissions enough for the container to use it while avoiding world-writable state.
    - Keep generated ntfy databases out of Git.
 
-5. Add nginx routing.
+5. Add nginx convenience routing.
    - Add a second nginx location for `{{ ntfy_public_path }}` in the existing server block.
-   - Proxy to `http://127.0.0.1:{{ ntfy_host_port }}`.
-   - Include standard forwarded headers.
-   - Preserve WebSocket/long-polling behavior if ntfy needs upgraded connections.
+   - Redirect to `{{ ntfy_base_url }}/` because ntfy does not support hosting the web UI under a URL subpath.
 
 6. Add Prometheus integration if ntfy metrics are enabled.
    - Enable ntfy metrics only if the server supports a no-secret `/metrics` endpoint for this deployment mode.
@@ -92,14 +91,14 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
    - Deploy with Ansible.
    - Check `docker compose ps ntfy`.
    - Check `http://127.0.0.1:8093/v1/health` on the Pi.
-   - Check `http://deathstar.local/ntfy/` from the laptop.
+   - Check `http://deathstar.local:8093/` from the laptop.
    - Publish a test notification to an authenticated topic.
    - Subscribe from browser or CLI and verify delivery.
 
 ## Open Questions Before Implementation
 
 - ntfy uses `/opt/bill-update-tracker/runtime/ntfy` for this phase; the attached thumb drive can be selected later by changing `ntfy_data_dir`.
-- The LAN route is `http://deathstar.local/ntfy/` for this phase.
+- The LAN route is `http://deathstar.local:8093/` for this phase.
 - The first account is provisioned through `NTFY_AUTH_USERS`; the username is intentionally not committed.
 - Authenticated users can publish to topics according to their ntfy role for this phase.
 
@@ -109,5 +108,5 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 - ntfy survives container restart with its auth database and cache intact.
 - unauthenticated publishing is denied.
 - authenticated publishing succeeds.
-- LAN access through nginx works.
+- LAN access to the ntfy port works, and nginx `/ntfy/` redirects to it.
 - no ntfy credentials or Congress.gov credentials appear in tracked files, untracked project files, command output, or screenshots.

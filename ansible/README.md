@@ -61,8 +61,10 @@ http://deathstar.local/bill-update-tracker/
 Expected ntfy route after deploy:
 
 ```text
-http://deathstar.local/ntfy/
+http://deathstar.local:8093/
 ```
+
+The nginx `/ntfy/` route redirects to this port because ntfy does not support hosting the web UI under a URL subpath.
 
 ## Notes
 
@@ -70,6 +72,6 @@ http://deathstar.local/ntfy/
 - The app is deployed to `/opt/bill-update-tracker`.
 - Grafana binds to `127.0.0.1:3000`; Nginx is the public entrypoint.
 - FastAPI binds to `127.0.0.1:8000`.
-- ntfy binds to `127.0.0.1:8093` and is served by Nginx at `/ntfy/`.
+- ntfy binds to `0.0.0.0:8093` on the Pi and is intended for LAN or VPN access only.
 - Postgres remains private to the Docker network.
 - If UFW is active, the deploy playbook allows `80/tcp` so the Nginx route is reachable from the LAN.
