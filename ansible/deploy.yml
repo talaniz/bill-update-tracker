@@ -34,6 +34,12 @@
           - nginx_conf_d.stat.isdir
         fail_msg: "/etc/nginx/conf.d does not exist; inspect nginx include paths before deploying proxy config."
 
+    - name: Check ufw status
+      ansible.builtin.command: ufw status
+      register: ufw_status
+      changed_when: false
+      failed_when: false
+
   tasks:
     - name: Ensure app parent directory exists
       ansible.builtin.file:
@@ -69,6 +75,14 @@
     - name: Validate nginx config
       ansible.builtin.command: "{{ nginx_test_command }}"
       changed_when: false
+
+    - name: Allow HTTP through ufw
+      ansible.builtin.command: ufw allow 80/tcp
+      register: ufw_allow_http
+      changed_when: "'Rule added' in ufw_allow_http.stdout or 'Rules updated' in ufw_allow_http.stdout"
+      when:
+        - manage_ufw_http | bool
+        - "'Status: active' in ufw_status.stdout"
 
     - name: Apply nginx config before smoke checks
       ansible.builtin.command: "{{ nginx_reload_command }}"

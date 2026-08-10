@@ -48,3 +48,4 @@ http://deathstar.local/bill-update-tracker/
 - Grafana binds to `127.0.0.1:3000`; Nginx is the public entrypoint.
 - FastAPI binds to `127.0.0.1:8000`.
 - Postgres remains private to the Docker network.
+- If UFW is active, the deploy playbook allows `80/tcp` so the Nginx route is reachable from the LAN.
