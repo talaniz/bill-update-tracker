@@ -96,6 +96,12 @@
         CONGRESS_API_KEY: "{{ congress_api_key_from_controller }}"
       no_log: true
 
+    - name: Restart Grafana to reload provisioning
+      ansible.builtin.command: docker compose restart grafana
+      args:
+        chdir: "{{ app_install_dir }}"
+      changed_when: false
+
     - name: Wait for FastAPI health endpoint
       ansible.builtin.uri:
         url: http://127.0.0.1:8000/health
