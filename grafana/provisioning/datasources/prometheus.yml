@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Bill Update Tracker Prometheus
+    type: prometheus
+    access: proxy
+    uid: bill-update-prometheus
+    url: http://prometheus:9090
+    isDefault: false
+    editable: true
+

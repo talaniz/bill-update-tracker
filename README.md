@@ -9,6 +9,7 @@ Track Congress.gov bill update volume over time so downstream projects can estim
 - Bill text-version updates.
 - Official Congress.gov summary updates.
 - Poll health: last query time, next scheduled query time, and whether a poll is currently running.
+- Pi compute health: CPU, load, memory, filesystems, network traffic, file descriptors, and per-container resource usage.
 
 Initial tracking starts from the current day. The default scheduler polls hourly and stores both raw events and daily rollups in Postgres.
 
@@ -37,6 +38,8 @@ FastAPI health: `http://localhost:8000/health`
 FastAPI status: `http://localhost:8000/status`
 
 The dashboard is provisioned at `http://localhost:3000/d/bill-update-tracker/bill-update-tracker`.
+
+The Pi compute dashboard is provisioned at `http://localhost:3000/d/pi-compute-metrics/pi-compute-metrics`.
 
 ## Raspberry Pi Deployment
 
@@ -90,3 +93,5 @@ python3 scripts/validate_harness.py
 ## Notes
 
 The Congress.gov API reports bill, text, and summary updates with different date fields. This tracker stores each observed update with an idempotent event key and uses daily rollups for Grafana.
+
+Host and container metrics are collected by Prometheus from `node-exporter` and cAdvisor. Prometheus, node_exporter, and cAdvisor are private to the Docker network by default; Grafana is the UI entrypoint.
