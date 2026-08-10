@@ -90,7 +90,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "mappings": []
+          "mappings": [],
+          "unit": "dateTimeAsIso"
         },
         "overrides": []
       },
@@ -119,7 +120,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT last_finished_at::text AS value FROM scheduler_state WHERE id = 1",
+          "rawSql": "SELECT EXTRACT(EPOCH FROM last_finished_at) * 1000 AS value FROM scheduler_state WHERE id = 1",
           "refId": "A"
         }
       ],
@@ -133,7 +134,8 @@
       },
       "fieldConfig": {
         "defaults": {
-          "mappings": []
+          "mappings": [],
+          "unit": "dateTimeAsIso"
         },
         "overrides": []
       },
@@ -162,7 +164,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT next_run_at::text AS value FROM scheduler_state WHERE id = 1",
+          "rawSql": "SELECT EXTRACT(EPOCH FROM next_run_at) * 1000 AS value FROM scheduler_state WHERE id = 1",
           "refId": "A"
         }
       ],
@@ -179,10 +181,10 @@
           "mappings": [
             {
               "options": {
-                "false": {
+                "0": {
                   "text": "No"
                 },
-                "true": {
+                "1": {
                   "text": "Yes"
                 }
               },
@@ -217,7 +219,7 @@
       "targets": [
         {
           "format": "table",
-          "rawSql": "SELECT is_running AS value FROM scheduler_state WHERE id = 1",
+          "rawSql": "SELECT CASE WHEN is_running THEN 1 ELSE 0 END AS value FROM scheduler_state WHERE id = 1",
           "refId": "A"
         }
       ],
@@ -244,4 +246,3 @@
   "version": 1,
   "weekStart": ""
 }
-
