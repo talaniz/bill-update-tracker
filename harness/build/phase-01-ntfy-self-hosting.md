@@ -20,7 +20,7 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 - The Pi already has Docker, Docker Compose, nginx, and UFW handling from the existing deployment path.
 - The default install path remains `/opt/bill-update-tracker`.
 - ntfy state can live under `/opt/bill-update-tracker/runtime/ntfy` unless a later storage review picks a thumb-drive path.
-- ntfy credentials are supplied from the controller environment during deploy, similar to `CONGRESS_API_KEY`.
+- ntfy credentials are supplied from `NTFY_AUTH_USERS` in the controller environment during deploy, similar to `CONGRESS_API_KEY`.
 
 ## Non-Goals
 
@@ -56,7 +56,7 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 
 3. Add secret handling for ntfy auth.
    - Require local deploy environment variables for the initial ntfy admin user and password hash or password.
-   - Prefer passing a bcrypt hash to Compose as `NTFY_AUTH_USERS` so plaintext ntfy passwords are not written to disk.
+   - Pass bcrypt hashes to Compose as `NTFY_AUTH_USERS` so plaintext ntfy passwords are not written to disk.
    - Document how to generate the bcrypt hash locally.
    - Do not read or print secret files during normal work.
 
@@ -98,10 +98,10 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 
 ## Open Questions Before Implementation
 
-- Should ntfy use `/opt/bill-update-tracker/runtime/ntfy`, or should it use the attached thumb drive once its mount path is confirmed?
-- Should the public route be `http://deathstar.local/ntfy/` or should we add a dedicated host such as `http://ntfy.deathstar.local/`?
-- What admin username should be used for the first ntfy account?
-- Should publishing be limited to specific topic names, or is authenticated publish access to any topic acceptable for the first pass?
+- ntfy uses `/opt/bill-update-tracker/runtime/ntfy` for this phase; the attached thumb drive can be selected later by changing `ntfy_data_dir`.
+- The LAN route is `http://deathstar.local/ntfy/` for this phase.
+- The first account is provisioned through `NTFY_AUTH_USERS`; the username is intentionally not committed.
+- Authenticated users can publish to topics according to their ntfy role for this phase.
 
 ## Acceptance Criteria
 

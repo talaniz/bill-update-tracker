@@ -10,6 +10,7 @@ __pycache__/
 dist/
 *.egg-info/
 data/
+runtime/
 grafana-storage/
 postgres-data/
 ansible/inventory.yml

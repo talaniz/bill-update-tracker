@@ -6,6 +6,7 @@
 
   vars:
     congress_api_key_from_controller: "{{ lookup('ansible.builtin.env', 'CONGRESS_API_KEY') }}"
+    ntfy_auth_users_from_controller: "{{ lookup('ansible.builtin.env', 'NTFY_AUTH_USERS') }}"
 
   pre_tasks:
     - name: Require local CONGRESS_API_KEY
@@ -13,6 +14,14 @@
         that:
           - congress_api_key_from_controller | length > 0
         fail_msg: "Source ~/.zshrc.secrets on the laptop before deploy so CONGRESS_API_KEY is available to Ansible."
+      no_log: true
+
+    - name: Require local NTFY_AUTH_USERS
+      ansible.builtin.assert:
+        that:
+          - ntfy_auth_users_from_controller | length > 0
+        fail_msg: "Set NTFY_AUTH_USERS in the deploy environment before deploy so ntfy has at least one authenticated user."
+      when: ntfy_enabled | bool
       no_log: true
 
     - name: Check Docker is installed
@@ -54,6 +63,15 @@
         version: "{{ app_repo_version }}"
         update: true
         force: true
+
+    - name: Ensure ntfy data directory exists
+      ansible.builtin.file:
+        path: "{{ ntfy_data_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: ntfy_enabled | bool
 
     - name: Write runtime environment file
       ansible.builtin.template:
@@ -122,6 +140,16 @@
       delay: 3
       until: grafana_proxy.status == 200
 
+    - name: Wait for ntfy health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ ntfy_host_port }}/v1/health"
+        return_content: true
+      register: ntfy_health
+      retries: 20
+      delay: 3
+      until: ntfy_health.status == 200
+      when: ntfy_enabled | bool
+
     - name: Check Docker services
       ansible.builtin.command: docker compose ps
       args:
@@ -134,6 +162,7 @@
         msg:
           - "Deployed {{ app_repo_url }} {{ app_repo_version }} to {{ app_install_dir }}"
           - "Grafana route: http://{{ app_public_host }}{{ app_public_path }}"
+          - "ntfy route: http://{{ app_public_host }}{{ ntfy_public_path }}"
           - "{{ compose_ps.stdout_lines }}"
 
   handlers:

@@ -10,6 +10,7 @@ Track Congress.gov bill update volume over time so downstream projects can estim
 - Official Congress.gov summary updates.
 - Poll health: last query time, next scheduled query time, and whether a poll is currently running.
 - Pi compute health: CPU, load, memory, filesystems, network traffic, file descriptors, and per-container resource usage.
+- LAN-only ntfy notifications for operational alerts.
 
 Initial tracking starts from the current day. The default scheduler polls hourly and stores both raw events and daily rollups in Postgres.
 
@@ -33,6 +34,8 @@ docker compose up --build
 
 Grafana: `http://localhost:3000`
 
+ntfy: `http://localhost:8093`
+
 FastAPI health: `http://localhost:8000/health`
 
 FastAPI status: `http://localhost:8000/status`
@@ -40,6 +43,14 @@ FastAPI status: `http://localhost:8000/status`
 The dashboard is provisioned at `http://localhost:3000/d/bill-update-tracker/bill-update-tracker`.
 
 The Pi compute dashboard is provisioned at `http://localhost:3000/d/pi-compute-metrics/pi-compute-metrics`.
+
+Set `NTFY_AUTH_USERS` before using ntfy locally. The value is a comma-separated list of `username:bcrypt-hash:role` entries. Generate a hash with the ntfy container rather than an online password generator:
+
+```bash
+docker run --rm -it binwiederhier/ntfy:v2.26.3 user hash
+```
+
+If you put the value in `.env`, escape bcrypt `$` characters as `$$` so Docker Compose preserves the hash.
 
 ## Raspberry Pi Deployment
 
@@ -53,6 +64,12 @@ The default deployment path is `/opt/bill-update-tracker`, and Grafana is served
 
 ```text
 http://deathstar.local/bill-update-tracker/
+```
+
+ntfy is served through the same Nginx host at:
+
+```text
+http://deathstar.local/ntfy/
 ```
 
 See `ansible/README.md` for the checked deployment workflow.
@@ -80,6 +97,24 @@ source ~/.zshrc.secrets
 docker compose exec tracker python -m bill_update_tracker.collector run-once
 ```
 
+## ntfy Smoke Test
+
+After setting `NTFY_AUTH_USERS` and starting the stack, publish a local test notification:
+
+```bash
+curl -u '<username>:<password>' \
+  -d 'bill-update-tracker ntfy smoke test' \
+  http://localhost:8093/bill-update-tracker-test
+```
+
+From the deployed Pi route, use:
+
+```bash
+curl -u '<username>:<password>' \
+  -d 'bill-update-tracker ntfy smoke test' \
+  http://deathstar.local/ntfy/bill-update-tracker-test
+```
+
 ## Verification
 
 Default verification does not call Congress.gov:
@@ -95,3 +130,5 @@ python3 scripts/validate_harness.py
 The Congress.gov API reports bill, text, and summary updates with different date fields. This tracker stores each observed update with an idempotent event key and uses daily rollups for Grafana.
 
 Host and container metrics are collected by Prometheus from `node-exporter` and cAdvisor. Prometheus, node_exporter, and cAdvisor are private to the Docker network by default; Grafana is the UI entrypoint.
+
+ntfy is configured as a private LAN service by default. It binds to localhost on the Docker host and is reachable through Nginx at `/ntfy/`; no router port forwarding or public internet exposure is required.
