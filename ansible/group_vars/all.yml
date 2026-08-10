@@ -18,6 +18,7 @@ grafana_admin_password: admin
 grafana_host_bind: 127.0.0.1
 grafana_root_url: "http://{{ app_public_host }}{{ app_public_path }}"
 grafana_serve_from_sub_path: "true"
+prometheus_retention: 30d
 
 nginx_site_path: /etc/nginx/conf.d/bill-update-tracker.conf
 nginx_test_command: /usr/sbin/nginx -t
