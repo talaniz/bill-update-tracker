@@ -1,5 +1,6 @@
 server {
     listen 80;
+    listen [::]:80;
     server_name {{ app_public_host }};
 
     location = {{ app_public_path | regex_replace('/$', '') }} {
