@@ -1,0 +1,6 @@
+all:
+  hosts:
+    deathstar:
+      ansible_host: deathstar.local
+      ansible_user: palpatine
+

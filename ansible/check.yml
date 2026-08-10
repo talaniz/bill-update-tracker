@@ -1,0 +1,49 @@
+---
+- name: Check bill update tracker deployment target
+  hosts: deathstar
+  gather_facts: true
+
+  tasks:
+    - name: Check Docker version
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Check Docker Compose version
+      ansible.builtin.command: docker compose version
+      register: compose_version
+      changed_when: false
+
+    - name: Check root filesystem capacity
+      ansible.builtin.command: df -hT /
+      register: root_df
+      changed_when: false
+
+    - name: Check mounted filesystems
+      ansible.builtin.command: lsblk -f
+      register: lsblk
+      changed_when: false
+
+    - name: Check existing listeners
+      ansible.builtin.shell: ss -ltnp 2>/dev/null || netstat -ltnp 2>/dev/null || true
+      register: listeners
+      changed_when: false
+
+    - name: Check nginx service
+      ansible.builtin.command: systemctl is-active nginx
+      register: nginx_active
+      changed_when: false
+      failed_when: false
+
+    - name: Show deployment check summary
+      ansible.builtin.debug:
+        msg:
+          - "{{ docker_version.stdout }}"
+          - "{{ compose_version.stdout }}"
+          - "{{ root_df.stdout_lines }}"
+          - "nginx active: {{ nginx_active.stdout | default('unknown') }}"
+          - "listeners:"
+          - "{{ listeners.stdout_lines }}"
+          - "mounts:"
+          - "{{ lsblk.stdout_lines }}"
+

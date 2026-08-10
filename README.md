@@ -40,7 +40,21 @@ The dashboard is provisioned at `http://localhost:3000/d/bill-update-tracker/bil
 
 ## Raspberry Pi Deployment
 
-Install Docker and Docker Compose on the Pi, clone this repo, create `.env`, and run:
+Ansible deployment files live in `ansible/`. The default target is:
+
+```text
+palpatine@deathstar.local
+```
+
+The default deployment path is `/opt/bill-update-tracker`, and Grafana is served through Nginx at:
+
+```text
+http://deathstar.local/bill-update-tracker/
+```
+
+See `ansible/README.md` for the checked deployment workflow.
+
+For a manual Pi deployment, install Docker and Docker Compose on the Pi, clone this repo, create `.env`, and run:
 
 ```bash
 docker compose up -d --build

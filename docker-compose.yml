@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: bill_update_tracker
       POSTGRES_USER: tracker
@@ -16,6 +17,7 @@ services:
 
   tracker:
     build: .
+    restart: unless-stopped
     secrets:
       - congress_api_key
     environment:
@@ -35,12 +37,15 @@ services:
 
   grafana:
     image: grafana/grafana-oss:11.1.0
+    restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_DEFAULT_THEME: light
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: ${GRAFANA_SERVE_FROM_SUB_PATH:-false}
     ports:
-      - "3000:3000"
+      - "${GRAFANA_HOST_BIND:-0.0.0.0}:3000:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

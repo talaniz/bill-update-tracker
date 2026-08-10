@@ -1,0 +1,25 @@
+app_name: bill-update-tracker
+app_install_dir: /opt/bill-update-tracker
+app_repo_url: https://github.com/talaniz/bill-update-tracker.git
+app_repo_version: main
+
+app_public_host: deathstar.local
+app_public_path: /bill-update-tracker/
+
+tracker_timezone: America/Los_Angeles
+poll_interval_seconds: 3600
+initial_lookback_days: 0
+track_current_congress_only: "true"
+target_congress: ""
+enable_scheduler: "true"
+
+grafana_admin_user: admin
+grafana_admin_password: admin
+grafana_host_bind: 127.0.0.1
+grafana_root_url: "http://{{ app_public_host }}{{ app_public_path }}"
+grafana_serve_from_sub_path: "true"
+
+nginx_site_path: /etc/nginx/conf.d/bill-update-tracker.conf
+nginx_test_command: /usr/sbin/nginx -t
+nginx_reload_command: systemctl reload nginx
+

@@ -12,3 +12,4 @@ dist/
 data/
 grafana-storage/
 postgres-data/
+ansible/inventory.yml

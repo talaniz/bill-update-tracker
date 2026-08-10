@@ -1,0 +1,117 @@
+---
+- name: Deploy bill update tracker
+  hosts: deathstar
+  become: true
+  gather_facts: true
+
+  vars:
+    congress_api_key_from_controller: "{{ lookup('ansible.builtin.env', 'CONGRESS_API_KEY') }}"
+
+  pre_tasks:
+    - name: Require local CONGRESS_API_KEY
+      ansible.builtin.assert:
+        that:
+          - congress_api_key_from_controller | length > 0
+        fail_msg: "Source ~/.zshrc.secrets on the laptop before deploy so CONGRESS_API_KEY is available to Ansible."
+      no_log: true
+
+    - name: Check Docker is installed
+      ansible.builtin.command: docker --version
+      changed_when: false
+
+    - name: Check Docker Compose is installed
+      ansible.builtin.command: docker compose version
+      changed_when: false
+
+    - name: Check nginx config directory exists
+      ansible.builtin.stat:
+        path: /etc/nginx/conf.d
+      register: nginx_conf_d
+
+    - name: Require nginx conf.d
+      ansible.builtin.assert:
+        that:
+          - nginx_conf_d.stat.isdir
+        fail_msg: "/etc/nginx/conf.d does not exist; inspect nginx include paths before deploying proxy config."
+
+  tasks:
+    - name: Ensure app parent directory exists
+      ansible.builtin.file:
+        path: "{{ app_install_dir | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: Clone or update app repository
+      ansible.builtin.git:
+        repo: "{{ app_repo_url }}"
+        dest: "{{ app_install_dir }}"
+        version: "{{ app_repo_version }}"
+        update: true
+        force: true
+
+    - name: Write runtime environment file
+      ansible.builtin.template:
+        src: tracker.env.j2
+        dest: "{{ app_install_dir }}/.env"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Write nginx reverse proxy config
+      ansible.builtin.template:
+        src: nginx-bill-update-tracker.conf.j2
+        dest: "{{ nginx_site_path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Validate nginx config
+      ansible.builtin.command: "{{ nginx_test_command }}"
+      changed_when: false
+
+    - name: Start tracker stack
+      ansible.builtin.command: docker compose --env-file .env up -d --build
+      args:
+        chdir: "{{ app_install_dir }}"
+      environment:
+        CONGRESS_API_KEY: "{{ congress_api_key_from_controller }}"
+      no_log: true
+
+    - name: Wait for FastAPI health endpoint
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8000/health
+        return_content: true
+      register: fastapi_health
+      retries: 20
+      delay: 3
+      until: fastapi_health.status == 200
+
+    - name: Wait for Grafana through nginx
+      ansible.builtin.uri:
+        url: "http://127.0.0.1{{ app_public_path }}login"
+        headers:
+          Host: "{{ app_public_host }}"
+        return_content: false
+      register: grafana_proxy
+      retries: 20
+      delay: 3
+      until: grafana_proxy.status == 200
+
+    - name: Check Docker services
+      ansible.builtin.command: docker compose ps
+      args:
+        chdir: "{{ app_install_dir }}"
+      register: compose_ps
+      changed_when: false
+
+    - name: Show deploy summary
+      ansible.builtin.debug:
+        msg:
+          - "Deployed {{ app_repo_url }} {{ app_repo_version }} to {{ app_install_dir }}"
+          - "Grafana route: http://{{ app_public_host }}{{ app_public_path }}"
+          - "{{ compose_ps.stdout_lines }}"
+
+  handlers:
+    - name: Reload nginx
+      ansible.builtin.command: "{{ nginx_reload_command }}"
