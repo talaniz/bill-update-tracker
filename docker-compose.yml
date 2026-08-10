@@ -82,7 +82,7 @@ services:
       - /:/host:ro,rslave
 
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.56.0
+    image: ghcr.io/google/cadvisor:0.56.0
     restart: unless-stopped
     privileged: true
     devices:
