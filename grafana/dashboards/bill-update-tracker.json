@@ -241,7 +241,7 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "Bill Update Tracker",
+  "title": "Mothership Bill Update Tracker",
   "uid": "bill-update-tracker",
   "version": 1,
   "weekStart": ""

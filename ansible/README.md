@@ -1,6 +1,6 @@
 # Ansible Deployment
 
-This deploys Bill Update Tracker to `palpatine@deathstar.local`.
+This deploys Mothership to `palpatine@deathstar.local`.
 
 ## One-Time Setup
 
@@ -64,12 +64,21 @@ Expected ntfy route after deploy:
 http://deathstar.local/ntfy/
 ```
 
+Mothership landing and activity dashboard:
+
+```text
+http://deathstar.local/
+http://deathstar.local/bill-update-tracker/d/mothership-activity/mothership-activity
+```
+
 ## Notes
 
 - Docker and Docker Compose must already be installed on the Pi.
 - The app is deployed to `/opt/bill-update-tracker`.
 - Grafana binds to `127.0.0.1:3000`; Nginx is the public entrypoint.
 - FastAPI binds to `127.0.0.1:8000`.
+- Loki and Alloy bind to localhost only; Grafana accesses Loki through its private Docker network.
+- Loki retains metadata-only operational logs for 30 days. Request bodies, credentials, secrets, and ntfy message content are not intentionally logged.
 - ntfy binds to `127.0.0.1:8093` and is served by Nginx at `/ntfy/`.
 - Postgres remains private to the Docker network.
 - If UFW is active, the deploy playbook allows `80/tcp` so the Nginx route is reachable from the LAN.

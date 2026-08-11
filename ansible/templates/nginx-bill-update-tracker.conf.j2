@@ -3,6 +3,13 @@ server {
     listen [::]:80;
     server_name {{ app_public_host }};
 
+    root {{ landing_root }};
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
     location = {{ app_public_path | regex_replace('/$', '') }} {
         return 301 {{ app_public_path }};
     }

@@ -5,6 +5,7 @@ app_repo_version: main
 
 app_public_host: deathstar.local
 app_public_path: /bill-update-tracker/
+landing_root: "{{ app_install_dir }}/landing"
 
 tracker_timezone: America/Los_Angeles
 poll_interval_seconds: 3600
@@ -19,6 +20,11 @@ grafana_host_bind: 127.0.0.1
 grafana_root_url: "http://{{ app_public_host }}{{ app_public_path }}"
 grafana_serve_from_sub_path: "true"
 prometheus_retention: 30d
+loki_host_bind: 127.0.0.1
+loki_host_port: 3100
+alloy_host_bind: 127.0.0.1
+alloy_host_port: 12345
+alloy_host_label: "{{ app_public_host }}"
 
 ntfy_enabled: true
 ntfy_host_bind: 127.0.0.1
