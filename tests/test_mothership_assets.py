@@ -32,6 +32,12 @@ class MothershipAssetTest(unittest.TestCase):
             variables,
         )
 
+    def test_deploy_verifies_grafana_without_requiring_bootstrap_password(self):
+        deploy = (PROJECT_ROOT / "ansible/deploy.yml").read_text()
+
+        self.assertIn("status_code: [200, 401]", deploy)
+        self.assertIn("Verify Grafana provisioning source files", deploy)
+
 
 if __name__ == "__main__":
     unittest.main()

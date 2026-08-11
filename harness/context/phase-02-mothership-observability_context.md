@@ -16,6 +16,7 @@
 - Tracker poll logs are structured JSON events: `poll_started`, `poll_succeeded`, and `poll_failed`.
 - Do not log request bodies, ntfy message contents, authentication material, API keys, raw upstream responses, or exception messages.
 - ntfy's canonical base URL must remain host-and-port only (`http://deathstar.local:8093`); nginx continues to expose the LAN convenience route at `/ntfy/`, which is not a valid ntfy base URL.
+- Grafana bootstrap credentials apply only to a new Grafana data volume. Deployment validates Grafana health and mounted provisioning files even when an existing instance uses a different administrator password; its authenticated API probes remain an additional check when the configured credentials match.
 - The root page uses a local copy of Pico CSS 2.1.1 and links to `http://deathstar.local:5678/` and `http://deathstar.local/bill-update-tracker/`.
 
 ## Deferred
