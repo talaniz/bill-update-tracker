@@ -87,6 +87,97 @@ No remaining blocking review findings.
 
 - `tests/test_mothership_assets.py` was added during reviewer follow-up. It verifies the landing links and Pico asset and guards the configurable Alloy host label plus removal of the prior `source` labels. The complete current suite passes with 15 tests.
 
+## Final Commit Review 2026-08-10
+
+### Scope
+
+Review of `b0d9c05` (`Fix ntfy canonical base URL`) and `4f058ac` (`Handle existing Grafana admin credentials`) against their runtime deployment contracts.
+
+### Findings
+
+- [P1] The advertised ntfy base URL is unreachable from LAN clients -- ansible/group_vars/all.yml:34
+  `NTFY_BASE_URL` now advertises `http://deathstar.local:8093`, but the same Ansible template sets `NTFY_HOST_BIND=127.0.0.1` and Compose publishes port 8093 only on that loopback interface. The only LAN-reachable route is nginx on port 80 at `/ntfy/`, which cannot serve as ntfy's pathless canonical root. Generated ntfy links, including attachment URLs, will therefore point clients at an unreachable endpoint.
+  Evidence: `ansible/templates/tracker.env.j2:14-16`, `docker-compose.yml:149,159`, and `ansible/templates/nginx-bill-update-tracker.conf.j2:32-33` show the conflicting external URL, loopback bind, and proxy route. ntfy documents `base-url` as the external/root URL used for generated attachment links.
+  Suggested fix: Make one pathless canonical URL externally reachable: either deliberately publish port 8093 to the LAN with the existing authentication controls, or give ntfy its own nginx host/port that proxies to loopback. Set `NTFY_BASE_URL` to that reachable root URL and add a separate-LAN-client smoke test for it.
+
+- [P1] The Grafana existing-admin fallback checks a path that is not mounted -- ansible/deploy.yml:199
+  The new fallback is meant to let an existing Grafana database with a different admin password deploy successfully, but it tests `/etc/grafana/dashboards/mothership-activity.json`. Compose mounts dashboards at `/var/lib/grafana/dashboards`, not `/etc/grafana/dashboards`, so the command exits nonzero and aborts every deploy that reaches it.
+  Evidence: `docker-compose.yml:57-58` mounts the provisioning directory and dashboard directory at distinct locations; the deploy command checks the datasource mount correctly at line 198 and the dashboard mount incorrectly at line 199. The added test asserts only that the task exists, not its container path.
+  Suggested fix: Check `/var/lib/grafana/dashboards/mothership-activity.json`, and strengthen the test to assert that exact mounted path. Retain the `200`/`401` API handling once this fallback can execute.
+
+### Dispositions
+
+- `b0d9c05`: rejected pending the reachable canonical ntfy root URL correction.
+- `4f058ac`: partially accepted for tolerating an existing Grafana admin password, but rejected pending the mounted-dashboard-path correction.
+- Final status: changes requested; do not treat Phase 02 as deployment-ready until both P1 findings are addressed and re-reviewed.
+
+### Verification
+
+- 17 Python tests, compilation, harness validation, Compose rendering, Ansible syntax validation, dashboard JSON parsing, and diff checks pass.
+- Those static checks do not exercise a LAN client following the ntfy base URL or `docker compose exec` inside Grafana, which is why both deployment errors escaped the added tests.
+
+## P1 Remediation Verification 2026-08-10
+
+### ntfy Canonical URL: Verified Addressed
+
+The Pi inventory now renders `NTFY_HOST_BIND=0.0.0.0`, `NTFY_HOST_PORT=8093`, and `NTFY_BASE_URL=http://deathstar.local:8093`. A simulated Pi Compose render publishes `0.0.0.0:8093:80`, while the existing nginx `/ntfy/` proxy remains unchanged. The deploy playbook adds the matching `ufw allow {{ ntfy_host_port }}/tcp` rule when UFW is active, and the README, Ansible documentation, phase context, and static test cover the canonical endpoint and LAN bind.
+
+### Grafana Existing-Admin Fallback: Verified Addressed
+
+The fallback now checks `/var/lib/grafana/dashboards/mothership-activity.json`, matching the Compose dashboard mount. The corresponding test asserts the corrected path, while the authenticated `200`/`401` probes continue to accommodate an existing Grafana data volume with a different administrator password.
+
+### Final Dispositions
+
+- P1 ntfy canonical URL: verified addressed; no longer remains.
+- P1 Grafana existing-admin fallback: verified addressed; no longer remains.
+- No P1 findings remain from the Final Commit Review.
+
+### Remaining Actionable Finding
+
+- [P2] Phase 01 desired outcome still describes the superseded loopback-only ntfy deployment -- harness/build/phase-01-ntfy-self-hosting.md:11
+  The Phase 01 build record now implements and documents authenticated LAN access at `0.0.0.0:8093`, but its Desired Outcome still says the container binds to `127.0.0.1`. This leaves the durable harness contradictory for later deployment or security work.
+  Evidence: Lines 39-54 in the same file specify the LAN bind and canonical URL.
+  Suggested fix: Replace the loopback-only Desired Outcome bullet with the approved authenticated, UFW-controlled LAN endpoint while retaining the no-public-internet constraint.
+
+### Residual Runtime Verification
+
+- Static checks pass: 17 Python tests, compilation, harness validation, Compose rendering, Ansible syntax validation, dashboard JSON parsing, and diff checks.
+- A real Pi deployment is still required to confirm the UFW rule is applied and a separate LAN client can reach the canonical ntfy URL.
+
+## P2 Final Verification 2026-08-10
+
+### Disposition: Not Addressed
+
+The Phase 01 Goal now correctly says authenticated LAN-only, but its Desired Outcome still states that the container port binds to `127.0.0.1` at `harness/build/phase-01-ntfy-self-hosting.md:11`. This directly conflicts with the same file's approved `0.0.0.0:8093` implementation at lines 39 and 51 and with the current Ansible deployment variables.
+
+### Current Review State
+
+- P0 tracker logging boundary: verified addressed.
+- P1 Activity dashboard latest result: verified addressed.
+- P2 Alloy label/host contract: verified addressed.
+- P1 ntfy canonical URL: verified addressed.
+- P1 Grafana existing-admin fallback: verified addressed.
+- P2 Phase 01 Desired Outcome: remains open pending removal of the loopback-only statement.
+
+Final disposition: Phase 02's implementation findings are addressed, but the review record cannot mark all current P1/P2 findings addressed until the stale Desired Outcome bullet is corrected and re-reviewed.
+
+## P2 Closure Verification 2026-08-10
+
+### Disposition: Verified Addressed
+
+The Phase 01 Desired Outcome now states that ntfy is exposed only to the LAN on port `8093` for its pathless canonical URL and that no public internet exposure is configured. This matches the authenticated `0.0.0.0:8093` deployment contract, UFW rule, canonical base URL, and retained nginx `/ntfy/` route.
+
+### Final Finding Status
+
+- P0 tracker logging boundary: verified addressed.
+- P1 Activity dashboard latest result: verified addressed.
+- P2 Alloy label/host contract: verified addressed.
+- P1 ntfy canonical URL: verified addressed.
+- P1 Grafana existing-admin fallback: verified addressed.
+- P2 Phase 01 Desired Outcome: verified addressed.
+
+No current P1 or P2 findings remain. The remaining Pi deployment checks are runtime acceptance verification, not unresolved review findings.
+
 ## Verification Performed
 
 - `git diff --check main`

@@ -27,7 +27,8 @@ alloy_host_port: 12345
 alloy_host_label: "{{ app_public_host }}"
 
 ntfy_enabled: true
-ntfy_host_bind: 127.0.0.1
+# ntfy requires a pathless, LAN-reachable canonical URL for generated links.
+ntfy_host_bind: 0.0.0.0
 ntfy_host_port: 8093
 ntfy_public_path: /ntfy/
 # ntfy rejects a canonical base URL with a path; nginx still serves /ntfy/.

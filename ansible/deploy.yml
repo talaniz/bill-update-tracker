@@ -102,6 +102,15 @@
         - manage_ufw_http | bool
         - "'Status: active' in ufw_status.stdout"
 
+    - name: Allow ntfy through ufw for LAN clients
+      ansible.builtin.command: "ufw allow {{ ntfy_host_port }}/tcp"
+      register: ufw_allow_ntfy
+      changed_when: "'Rule added' in ufw_allow_ntfy.stdout or 'Rules updated' in ufw_allow_ntfy.stdout"
+      when:
+        - ntfy_enabled | bool
+        - manage_ufw_http | bool
+        - "'Status: active' in ufw_status.stdout"
+
     - name: Apply nginx config before smoke checks
       ansible.builtin.command: "{{ nginx_reload_command }}"
       changed_when: false
@@ -196,7 +205,7 @@
       ansible.builtin.command: >-
         docker compose exec -T grafana sh -c
         'test -s /etc/grafana/provisioning/datasources/loki.yml &&
-        test -s /etc/grafana/dashboards/mothership-activity.json'
+        test -s /var/lib/grafana/dashboards/mothership-activity.json'
       args:
         chdir: "{{ app_install_dir }}"
       changed_when: false

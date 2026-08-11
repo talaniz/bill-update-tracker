@@ -138,4 +138,4 @@ The Congress.gov API reports bill, text, and summary updates with different date
 
 Host and container metrics are collected by Prometheus from `node-exporter` and cAdvisor. Loki stores container and nginx metadata logs for 30 days, and Alloy ships those logs to Loki. Prometheus, Loki, node_exporter, cAdvisor, and Alloy are private to the Docker network or localhost; Grafana is the UI entrypoint.
 
-ntfy is configured as a private LAN service by default. It binds to localhost on the Docker host and is reachable through Nginx at `/ntfy/`; no router port forwarding or public internet exposure is required.
+ntfy is configured as an authenticated LAN service. Its canonical, pathless endpoint is `http://deathstar.local:8093/`, which ntfy uses for generated links; Nginx also preserves the convenience route at `/ntfy/`. No router port forwarding or public internet exposure is required.

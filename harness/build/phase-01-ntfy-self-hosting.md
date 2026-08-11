@@ -2,13 +2,13 @@
 
 ## Goal
 
-Host a private ntfy server on the Raspberry Pi so local services can publish operational notifications without exposing a new service to the public internet.
+Host an authenticated LAN-only ntfy server on the Raspberry Pi so local services and LAN clients can publish operational notifications without exposing a new service to the public internet.
 
 ## Desired Outcome
 
 - ntfy runs on the Pi through Docker Compose.
 - ntfy is reachable on the LAN through nginx at `http://deathstar.local/ntfy/`.
-- ntfy is not directly exposed on a public interface; the container port binds to `127.0.0.1`.
+- ntfy is exposed only to the LAN on port `8093` for its pathless canonical URL; no public internet exposure is configured.
 - ntfy data persists across container restarts and deploys.
 - publishing requires authentication by default.
 - deployment remains repeatable through Ansible.
@@ -36,7 +36,7 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 1. Add ntfy configuration to Docker Compose.
    - Add a `ntfy` service using `binwiederhier/ntfy`.
    - Run `ntfy serve`.
-   - Bind `127.0.0.1:8093:80`.
+   - Bind `0.0.0.0:8093:80` for authenticated LAN clients; ntfy requires its canonical root URL to be reachable without a path.
    - Mount persistent data at `/var/lib/ntfy`.
    - Set `NTFY_BASE_URL=http://deathstar.local:8093`; ntfy does not accept a path in its canonical base URL, while nginx still exposes `/ntfy/` as the LAN convenience route.
    - Set `NTFY_BEHIND_PROXY=true`.
@@ -48,7 +48,7 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
 
 2. Add Ansible variables for ntfy.
    - `ntfy_enabled: true`
-   - `ntfy_host_bind: 127.0.0.1`
+   - `ntfy_host_bind: 0.0.0.0`
    - `ntfy_host_port: 8093`
    - `ntfy_public_path: /ntfy/`
    - `ntfy_base_url: http://deathstar.local:8093`

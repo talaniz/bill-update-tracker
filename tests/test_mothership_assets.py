@@ -31,12 +31,14 @@ class MothershipAssetTest(unittest.TestCase):
             'ntfy_base_url: "http://{{ app_public_host }}:{{ ntfy_host_port }}"',
             variables,
         )
+        self.assertIn("ntfy_host_bind: 0.0.0.0", variables)
 
     def test_deploy_verifies_grafana_without_requiring_bootstrap_password(self):
         deploy = (PROJECT_ROOT / "ansible/deploy.yml").read_text()
 
         self.assertIn("status_code: [200, 401]", deploy)
         self.assertIn("Verify Grafana provisioning source files", deploy)
+        self.assertIn("/var/lib/grafana/dashboards/mothership-activity.json", deploy)
 
 
 if __name__ == "__main__":
