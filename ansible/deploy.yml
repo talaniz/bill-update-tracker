@@ -114,6 +114,12 @@
         CONGRESS_API_KEY: "{{ congress_api_key_from_controller }}"
       no_log: true
 
+    - name: Restart Loki and Alloy to reload logging config
+      ansible.builtin.command: docker compose restart loki alloy
+      args:
+        chdir: "{{ app_install_dir }}"
+      changed_when: false
+
     - name: Restart Grafana to reload provisioning
       ansible.builtin.command: docker compose restart grafana
       args:
