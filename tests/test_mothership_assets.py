@@ -24,6 +24,14 @@ class MothershipAssetTest(unittest.TestCase):
         self.assertNotIn('source = "docker"', config)
         self.assertNotIn('source = "nginx"', config)
 
+    def test_ntfy_canonical_base_url_has_no_proxy_path(self):
+        variables = (PROJECT_ROOT / "ansible/group_vars/all.yml").read_text()
+
+        self.assertIn(
+            'ntfy_base_url: "http://{{ app_public_host }}:{{ ntfy_host_port }}"',
+            variables,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

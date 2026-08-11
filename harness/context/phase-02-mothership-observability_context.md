@@ -15,6 +15,7 @@
 - Use Grafana Alloy to discover Docker logs and read nginx access/error logs. Retain only the labels `service`, `container`, `stream`, and `host`.
 - Tracker poll logs are structured JSON events: `poll_started`, `poll_succeeded`, and `poll_failed`.
 - Do not log request bodies, ntfy message contents, authentication material, API keys, raw upstream responses, or exception messages.
+- ntfy's canonical base URL must remain host-and-port only (`http://deathstar.local:8093`); nginx continues to expose the LAN convenience route at `/ntfy/`, which is not a valid ntfy base URL.
 - The root page uses a local copy of Pico CSS 2.1.1 and links to `http://deathstar.local:5678/` and `http://deathstar.local/bill-update-tracker/`.
 
 ## Deferred

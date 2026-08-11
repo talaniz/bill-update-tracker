@@ -30,7 +30,8 @@ ntfy_enabled: true
 ntfy_host_bind: 127.0.0.1
 ntfy_host_port: 8093
 ntfy_public_path: /ntfy/
-ntfy_base_url: "http://{{ app_public_host }}{{ ntfy_public_path }}"
+# ntfy rejects a canonical base URL with a path; nginx still serves /ntfy/.
+ntfy_base_url: "http://{{ app_public_host }}:{{ ntfy_host_port }}"
 ntfy_data_dir: "{{ app_install_dir }}/runtime/ntfy"
 ntfy_auth_default_access: deny-all
 ntfy_enable_login: "true"

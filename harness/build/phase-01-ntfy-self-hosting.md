@@ -38,7 +38,7 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
    - Run `ntfy serve`.
    - Bind `127.0.0.1:8093:80`.
    - Mount persistent data at `/var/lib/ntfy`.
-   - Set `NTFY_BASE_URL=http://deathstar.local/ntfy`.
+   - Set `NTFY_BASE_URL=http://deathstar.local:8093`; ntfy does not accept a path in its canonical base URL, while nginx still exposes `/ntfy/` as the LAN convenience route.
    - Set `NTFY_BEHIND_PROXY=true`.
    - Set `NTFY_CACHE_FILE=/var/lib/ntfy/cache.db`.
    - Set `NTFY_AUTH_FILE=/var/lib/ntfy/auth.db`.
@@ -51,7 +51,7 @@ Host a private ntfy server on the Raspberry Pi so local services can publish ope
    - `ntfy_host_bind: 127.0.0.1`
    - `ntfy_host_port: 8093`
    - `ntfy_public_path: /ntfy/`
-   - `ntfy_base_url: http://deathstar.local/ntfy`
+   - `ntfy_base_url: http://deathstar.local:8093`
    - `ntfy_data_dir: "{{ app_install_dir }}/runtime/ntfy"`
 
 3. Add secret handling for ntfy auth.
