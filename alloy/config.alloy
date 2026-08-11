@@ -46,16 +46,16 @@ loki.process "docker" {
 loki.source.file "nginx" {
   targets = [
     {
-      __path__ = "/var/log/nginx/access.log"
-      host     = sys.env("ALLOY_HOST_LABEL")
-      service  = "nginx"
-      stream   = "access"
+      __path__ = "/var/log/nginx/access.log",
+      host     = sys.env("ALLOY_HOST_LABEL"),
+      service  = "nginx",
+      stream   = "access",
     },
     {
-      __path__ = "/var/log/nginx/error.log"
-      host     = sys.env("ALLOY_HOST_LABEL")
-      service  = "nginx"
-      stream   = "error"
+      __path__ = "/var/log/nginx/error.log",
+      host     = sys.env("ALLOY_HOST_LABEL"),
+      service  = "nginx",
+      stream   = "error",
     },
   ]
   forward_to = [loki.process.nginx.receiver]

@@ -18,6 +18,8 @@ class MothershipAssetTest(unittest.TestCase):
         config = (PROJECT_ROOT / "alloy/config.alloy").read_text()
 
         self.assertIn('host = sys.env("ALLOY_HOST_LABEL")', config)
+        self.assertIn('__path__ = "/var/log/nginx/access.log",', config)
+        self.assertIn('stream   = "error",', config)
         self.assertNotIn('host = "deathstar"', config)
         self.assertNotIn('source = "docker"', config)
         self.assertNotIn('source = "nginx"', config)
