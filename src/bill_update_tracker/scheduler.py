@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from .collector import run_once
+from .collector import PollRunFailed, run_once
+from .observability import log_activity
 from .config import Settings
 
 
@@ -16,7 +17,12 @@ def build_scheduler(settings: Settings, first_run_at: datetime | None = None) ->
     scheduler = BackgroundScheduler(timezone="UTC")
 
     def job() -> None:
-        run_once(next_run_at=next_run_time(settings))
+        try:
+            run_once(next_run_at=next_run_time(settings))
+        except PollRunFailed as exc:
+            log_activity("poll_scheduler_failed", error_type=type(exc).__name__)
+        except Exception as exc:
+            log_activity("poll_scheduler_failed", error_type=type(exc).__name__)
 
     scheduler.add_job(
         job,

@@ -102,6 +102,15 @@
         - manage_ufw_http | bool
         - "'Status: active' in ufw_status.stdout"
 
+    - name: Allow ntfy through ufw for LAN clients
+      ansible.builtin.command: "ufw allow {{ ntfy_host_port }}/tcp"
+      register: ufw_allow_ntfy
+      changed_when: "'Rule added' in ufw_allow_ntfy.stdout or 'Rules updated' in ufw_allow_ntfy.stdout"
+      when:
+        - ntfy_enabled | bool
+        - manage_ufw_http | bool
+        - "'Status: active' in ufw_status.stdout"
+
     - name: Apply nginx config before smoke checks
       ansible.builtin.command: "{{ nginx_reload_command }}"
       changed_when: false
@@ -113,6 +122,12 @@
       environment:
         CONGRESS_API_KEY: "{{ congress_api_key_from_controller }}"
       no_log: true
+
+    - name: Restart Loki and Alloy to reload logging config
+      ansible.builtin.command: docker compose restart loki alloy
+      args:
+        chdir: "{{ app_install_dir }}"
+      changed_when: false
 
     - name: Restart Grafana to reload provisioning
       ansible.builtin.command: docker compose restart grafana
@@ -140,6 +155,78 @@
       delay: 3
       until: grafana_proxy.status == 200
 
+    - name: Wait for Loki health endpoint
+      ansible.builtin.uri:
+        url: "http://{{ loki_host_bind }}:{{ loki_host_port }}/ready"
+        return_content: true
+      register: loki_health
+      retries: 20
+      delay: 3
+      until: loki_health.status == 200
+
+    - name: Wait for Alloy health endpoint
+      ansible.builtin.uri:
+        url: "http://{{ alloy_host_bind }}:{{ alloy_host_port }}/-/ready"
+        return_content: true
+      register: alloy_health
+      retries: 20
+      delay: 3
+      until: alloy_health.status == 200
+
+    - name: Verify Mothership Loki datasource provisioning
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/api/datasources/uid/mothership-loki
+        user: "{{ grafana_admin_user }}"
+        password: "{{ grafana_admin_password }}"
+        force_basic_auth: true
+        return_content: false
+        status_code: [200, 401]
+      register: loki_datasource
+      retries: 20
+      delay: 3
+      until: loki_datasource.status in [200, 401]
+      no_log: true
+
+    - name: Verify Mothership Activity dashboard provisioning
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/api/dashboards/uid/mothership-activity
+        user: "{{ grafana_admin_user }}"
+        password: "{{ grafana_admin_password }}"
+        force_basic_auth: true
+        return_content: false
+        status_code: [200, 401]
+      register: mothership_dashboard
+      retries: 20
+      delay: 3
+      until: mothership_dashboard.status in [200, 401]
+      no_log: true
+
+    - name: Verify Grafana provisioning source files
+      ansible.builtin.command: >-
+        docker compose exec -T grafana sh -c
+        'test -s /etc/grafana/provisioning/datasources/loki.yml &&
+        test -s /var/lib/grafana/dashboards/mothership-activity.json'
+      args:
+        chdir: "{{ app_install_dir }}"
+      changed_when: false
+
+    - name: Report Grafana bootstrap credential state
+      ansible.builtin.debug:
+        msg: >-
+          Grafana provisioning API checks {{ 'passed' if loki_datasource.status == 200 and mothership_dashboard.status == 200
+          else 'were skipped because the existing Grafana database uses a different administrator password than the bootstrap value' }}.
+
+    - name: Wait for Mothership landing page
+      ansible.builtin.uri:
+        url: http://127.0.0.1/
+        headers:
+          Host: "{{ app_public_host }}"
+        return_content: false
+      register: mothership_landing
+      retries: 20
+      delay: 3
+      until: mothership_landing.status == 200
+
     - name: Wait for ntfy health endpoint
       ansible.builtin.uri:
         url: "http://127.0.0.1:{{ ntfy_host_port }}/v1/health"
@@ -162,6 +249,7 @@
         msg:
           - "Deployed {{ app_repo_url }} {{ app_repo_version }} to {{ app_install_dir }}"
           - "Grafana route: http://{{ app_public_host }}{{ app_public_path }}"
+          - "Mothership landing: http://{{ app_public_host }}/"
           - "ntfy route: http://{{ app_public_host }}{{ ntfy_public_path }}"
           - "{{ compose_ps.stdout_lines }}"
 

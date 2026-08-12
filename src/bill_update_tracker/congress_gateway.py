@@ -6,6 +6,16 @@ from typing import Any
 from .normalize import parse_congress_datetime
 
 
+class CongressGatewayError(RuntimeError):
+    """A safe gateway error that never includes request URLs or response bodies."""
+
+    def __init__(self, error_type: str, status_code: int | None = None) -> None:
+        details = f"error_type={error_type}"
+        if status_code is not None:
+            details = f"{details} status_code={status_code}"
+        super().__init__(details)
+
+
 class CongressGateway:
     """Fetches Congress.gov updates while keeping congress.py as the configured client library."""
 
@@ -109,16 +119,16 @@ class CongressGateway:
     def _get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         import requests
 
-        response = self.client.session.get(
-            f"{self.api_root}/{path.lstrip('/')}",
-            params={**params, "api_key": self.api_key, "format": "json"},
-            timeout=30,
-        )
         try:
+            response = self.client.session.get(
+                f"{self.api_root}/{path.lstrip('/')}",
+                params={**params, "api_key": self.api_key, "format": "json"},
+                timeout=30,
+            )
             response.raise_for_status()
         except requests.HTTPError as exc:
-            body = response.text[:500].replace(self.api_key, "[redacted]")
-            raise RuntimeError(
-                f"Congress.gov request failed with status {response.status_code}: {body}"
-            ) from None
+            status_code = exc.response.status_code if exc.response is not None else None
+            raise CongressGatewayError("http_error", status_code) from None
+        except requests.RequestException as exc:
+            raise CongressGatewayError(type(exc).__name__) from None
         return response.json()

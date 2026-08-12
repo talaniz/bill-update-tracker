@@ -1,0 +1,66 @@
+:root {
+  --pico-font-size: 100%;
+  --pico-border-radius: 6px;
+  --pico-primary: #007c91;
+  --pico-primary-hover: #006879;
+}
+
+body {
+  background: #f5f7f4;
+}
+
+main.container {
+  max-width: 880px;
+  padding-top: 3rem;
+}
+
+nav {
+  border-bottom: 1px solid #cbd5cf;
+  margin-bottom: 4rem;
+}
+
+.eyebrow {
+  color: #4e6257;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.services {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 3rem;
+}
+
+.service-link {
+  background: #ffffff;
+  border: 1px solid #cbd5cf;
+  color: inherit;
+  display: grid;
+  gap: 0.4rem;
+  min-height: 8rem;
+  padding: 1.25rem;
+  text-decoration: none;
+}
+
+.service-link:hover {
+  border-color: #007c91;
+}
+
+.service-link span {
+  color: #4e6257;
+}
+
+@media (max-width: 600px) {
+  main.container {
+    padding-top: 1.5rem;
+  }
+
+  nav {
+    margin-bottom: 2.5rem;
+  }
+
+  .services {
+    grid-template-columns: 1fr;
+  }
+}

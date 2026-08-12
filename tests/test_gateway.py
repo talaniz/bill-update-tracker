@@ -1,8 +1,9 @@
 import unittest
+from types import SimpleNamespace
 from datetime import datetime, timezone
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from bill_update_tracker.congress_gateway import CongressGateway
+from bill_update_tracker.congress_gateway import CongressGateway, CongressGatewayError
 
 
 class GatewayTest(unittest.TestCase):
@@ -43,6 +44,33 @@ class GatewayTest(unittest.TestCase):
         gateway.track_current_congress_only = False
 
         self.assertEqual(gateway._path("bill"), "bill")
+
+    def test_request_timeout_error_never_contains_api_key_or_url(self):
+        class RequestException(Exception):
+            pass
+
+        class HTTPError(RequestException):
+            response = None
+
+        class Timeout(RequestException):
+            pass
+
+        gateway = object.__new__(CongressGateway)
+        gateway.api_key = "not-a-real-key"
+        gateway.api_root = "https://api.congress.gov/v3"
+        gateway.client = Mock()
+        gateway.client.session.get.side_effect = Timeout(
+            "https://api.congress.gov/v3/bill?token=not-a-real-key"
+        )
+
+        fake_requests = SimpleNamespace(RequestException=RequestException, HTTPError=HTTPError)
+        with patch.dict("sys.modules", {"requests": fake_requests}):
+            with self.assertRaises(CongressGatewayError) as raised:
+                gateway._get("bill", {})
+
+        self.assertEqual(str(raised.exception), "error_type=Timeout")
+        self.assertNotIn("not-a-real-key", str(raised.exception))
+        self.assertNotIn("https://", str(raised.exception))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,61 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "datasource": {"type": "loki", "uid": "mothership-loki"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "sum(count_over_time({service=~\"$service\"} |= \"poll_failed\" [$__interval]))", "refId": "A"}],
+      "title": "Poll Failures",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "mothership-loki"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"expr": "sum(count_over_time({service=~\"$service\"} [$__interval]))", "refId": "A"}],
+      "title": "Log Events",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "mothership-loki"},
+      "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "fillOpacity": 12, "lineInterpolation": "stepAfter", "showPoints": "never"}, "unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"expr": "sum by (service) (count_over_time({service=~\"$service\"} [$__interval]))", "legendFormat": "{{service}}", "refId": "A"}],
+      "title": "Activity By Service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "mothership-loki"},
+      "gridPos": {"h": 16, "w": 12, "x": 12, "y": 8},
+      "options": {"dedupStrategy": "none", "enableLogDetails": true, "prettifyJSON": true, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true},
+      "targets": [{"expr": "{service=~\"$service\"}", "refId": "A"}],
+      "title": "Live Activity",
+      "type": "logs"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "mothership-loki"},
+      "gridPos": {"h": 16, "w": 12, "x": 0, "y": 8},
+      "options": {"dedupStrategy": "none", "enableLogDetails": true, "prettifyJSON": true, "showCommonLabels": false, "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true},
+      "targets": [{"expr": "{service=\"tracker\"} | json | event=~\"poll_succeeded|poll_failed\"", "refId": "A"}],
+      "title": "Latest Poll Result",
+      "type": "logs"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["mothership", "logs"],
+  "templating": {"list": [{"current": {"selected": true, "text": "All", "value": ".+"}, "datasource": {"type": "loki", "uid": "mothership-loki"}, "definition": "label_values(service)", "includeAll": true, "label": "Service", "multi": true, "name": "service", "options": [], "query": "label_values(service)", "refresh": 1, "regex": "", "type": "query"}]},
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Mothership Activity",
+  "uid": "mothership-activity",
+  "version": 1
+}

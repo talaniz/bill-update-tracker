@@ -225,6 +225,126 @@
       ],
       "title": "Query Running Now",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "bill-update-postgres"
+      },
+      "description": "Successful polls only. This shows new updates first discovered in each hour; timestamps render in your browser timezone.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT date_trunc('hour', finished_at) AS time, SUM(inserted_events) AS new_updates FROM poll_runs WHERE status = 'success' AND finished_at IS NOT NULL AND $__timeFilter(finished_at) GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "New Updates Discovered Per Hour",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "bill-update-postgres"
+      },
+      "description": "Successful polls only. Zero means the hour completed without new updates; one means at least one update was discovered.",
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT date_trunc('hour', finished_at) AS time, MAX(CASE WHEN inserted_events > 0 THEN 1 ELSE 0 END) AS discovery_poll FROM poll_runs WHERE status = 'success' AND finished_at IS NOT NULL AND $__timeFilter(finished_at) GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Poll Result Per Hour",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "bill-update-postgres"
+      },
+      "description": "An active weekday has at least one successful poll with new updates. Gather 30 active weekdays: one discovery poll per active day means daily batching is likely; repeated intraday discoveries mean retain intraday LLM-summary handling.",
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT date_trunc('day', finished_at) AS time, COUNT(*) AS discovery_polls FROM poll_runs WHERE status = 'success' AND finished_at IS NOT NULL AND inserted_events > 0 AND EXTRACT(ISODOW FROM finished_at) BETWEEN 1 AND 5 AND $__timeFilter(finished_at) GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Discovery Polls Per Active Day",
+      "type": "timeseries"
     }
   ],
   "refresh": "1m",
@@ -241,7 +361,7 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "Bill Update Tracker",
+  "title": "Mothership Bill Update Tracker",
   "uid": "bill-update-tracker",
   "version": 1,
   "weekStart": ""

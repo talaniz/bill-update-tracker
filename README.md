@@ -1,4 +1,4 @@
-# Bill Update Tracker
+# Mothership
 
 Track Congress.gov bill update volume over time so downstream projects can estimate how often bill changes might need LLM summarization.
 
@@ -11,6 +11,7 @@ Track Congress.gov bill update volume over time so downstream projects can estim
 - Poll health: last query time, next scheduled query time, and whether a poll is currently running.
 - Pi compute health: CPU, load, memory, filesystems, network traffic, file descriptors, and per-container resource usage.
 - LAN-only ntfy notifications for operational alerts.
+- Mothership operational activity logs in Grafana.
 
 Initial tracking starts from the current day. The default scheduler polls hourly and stores both raw events and daily rollups in Postgres.
 
@@ -34,6 +35,8 @@ docker compose up --build
 
 Grafana: `http://localhost:3000`
 
+Mothership Activity: `http://localhost:3000/d/mothership-activity/mothership-activity`
+
 ntfy: `http://localhost:8093`
 
 FastAPI health: `http://localhost:8000/health`
@@ -43,6 +46,8 @@ FastAPI status: `http://localhost:8000/status`
 The dashboard is provisioned at `http://localhost:3000/d/bill-update-tracker/bill-update-tracker`.
 
 The Pi compute dashboard is provisioned at `http://localhost:3000/d/pi-compute-metrics/pi-compute-metrics`.
+
+Loki and Alloy collect container and nginx operational metadata for 30 days. Tracker logs include poll lifecycle metadata only; request bodies, ntfy message content, credentials, and API keys are not logged.
 
 Set `NTFY_AUTH_USERS` before using ntfy locally. The value is a comma-separated list of `username:bcrypt-hash:role` entries. Generate a hash with the ntfy container rather than an online password generator:
 
@@ -65,6 +70,8 @@ The default deployment path is `/opt/bill-update-tracker`, and Grafana is served
 ```text
 http://deathstar.local/bill-update-tracker/
 ```
+
+Mothership's local landing page is served at `http://deathstar.local/`. It links to Grafana and n8n at `http://deathstar.local:5678/`.
 
 ntfy is served through the same Nginx host at:
 
@@ -129,6 +136,6 @@ python3 scripts/validate_harness.py
 
 The Congress.gov API reports bill, text, and summary updates with different date fields. This tracker stores each observed update with an idempotent event key and uses daily rollups for Grafana.
 
-Host and container metrics are collected by Prometheus from `node-exporter` and cAdvisor. Prometheus, node_exporter, and cAdvisor are private to the Docker network by default; Grafana is the UI entrypoint.
+Host and container metrics are collected by Prometheus from `node-exporter` and cAdvisor. Loki stores container and nginx metadata logs for 30 days, and Alloy ships those logs to Loki. Prometheus, Loki, node_exporter, cAdvisor, and Alloy are private to the Docker network or localhost; Grafana is the UI entrypoint.
 
-ntfy is configured as a private LAN service by default. It binds to localhost on the Docker host and is reachable through Nginx at `/ntfy/`; no router port forwarding or public internet exposure is required.
+ntfy is configured as an authenticated LAN service. Its canonical, pathless endpoint is `http://deathstar.local:8093/`, which ntfy uses for generated links; Nginx also preserves the convenience route at `/ntfy/`. No router port forwarding or public internet exposure is required.
